@@ -41,6 +41,20 @@ namespace math
             Array.Copy(a._data, this._data, _rows * _columns);
         }
 
+        public Matrix(double [,] data)
+        {
+            _rows = data.GetLength(0);
+            _columns = data.GetLength(1);
+            _data = new double[_rows * _columns];
+            for (int i = 0; i < _rows; i++)
+            {
+                for (int j = 0; j < _columns; j++)
+                {
+                    this[i, j] = data[i, j];
+                }
+            }
+        }
+
         public double this[int i, int j]
         {
             get
@@ -241,34 +255,42 @@ namespace math
         }
 
         public delegate double MapFn1(double x);
-        public delegate double MapFn2(double x, double y);
-        public delegate double MapFn3(double x, double y, double z);
+        public delegate double MapRCFn1(int row, int col, double x);
 
+        public Matrix MapNew(MapFn1 fn)
+        {
+            Matrix r = new Matrix(this._rows, this._columns);
+            for (int i = 0; i < _data.Length; i++)
+            {
+                r._data[i] = fn(_data[i]);
+            }
+            return r;
+        }
+        public Matrix MapRCNew(MapRCFn1 fn)
+        {
+            Matrix r = new Matrix(this._rows, this._columns);
+            for (int i = 0; i < _data.Length; i++)
+            {
+                r._data[i] = fn(i / this._columns, i % this._columns, _data[i]);
+            }
+            return r;
+        }
         public Matrix Map(MapFn1 fn)
         {
             for (int i = 0; i < _data.Length; i++)
             {
-                _data[i] += fn(_data[i]);
+                _data[i] = fn(_data[i]);
             }
             return this;
         }
-        public Matrix Map2(MapFn2 fn, double y)
+        public Matrix MapRC(MapRCFn1 fn)
         {
             for (int i = 0; i < _data.Length; i++)
             {
-                _data[i] += fn(_data[i], y);
+                _data[i] = fn(i / this._columns, i % this._columns, _data[i]);
             }
             return this;
         }
-        public Matrix Map3(MapFn3 fn, double y, double z)
-        {
-            for (int i = 0; i < _data.Length; i++)
-            {
-                _data[i] += fn(_data[i], y, z);
-            }
-            return this;
-        }
-
         public void Print(string label="")
         {
             if (label != "")
