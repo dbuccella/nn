@@ -104,6 +104,7 @@ namespace math
             Fill(0.0);
             return this;
         }
+
         public Matrix FillRandom(double min, double max)
         {
             Random gen = new Random(DateTime.Now.Millisecond);
@@ -112,8 +113,8 @@ namespace math
                 _data[i] = (max - min) * gen.NextDouble() + min;
             }
             return this;
-
         }
+
         public Matrix Sum(Matrix a)
         {
             EnsureSameDim(this, a);
@@ -123,6 +124,7 @@ namespace math
             }
             return this;
         }
+
         public Matrix Substract(Matrix a)
         {
             EnsureSameDim(this, a);
