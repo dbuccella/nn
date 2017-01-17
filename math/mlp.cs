@@ -103,15 +103,15 @@ namespace math
 
         double BP(Matrix y)
         {
-            Matrix e = a[2] - y.Transpose();
+            Matrix e = y.Transpose() - a[2];
             Matrix d2 = e * (a[2].Map(Prime));
             Matrix d1 = w[1].Transpose().Dot(d2) * (a[1].Map(Prime));
             //
-            Matrix dw1 = a[1].Dot(d2.Transpose());
-            Matrix dw0 = a[0].Dot(d1.Transpose());
+            Matrix dw1 = d2.Dot(a[1].Transpose());
+            Matrix dw0 = d1.Dot(a[0].Transpose());
             //
-            w[0] = w[0] + dw0;
-            w[1] = w[1] + dw1;
+            w[0] = w[0] + dw0.Multiply(Mu);
+            w[1] = w[1] + dw1.Multiply(Mu);
 
             return e.SquaredError();
         }
@@ -122,12 +122,15 @@ namespace math
             int epoch = 0;
             double error = 1.0;
             InitWeights();
-            while ((error > 0.1) && ((epoch < 10000)))
+            while ((error > 0.001) && ((epoch < 10000)))
             {
                 for (int i = 0; i < x.Rows; i++)
                 {
                     FF(x.Row(idx[i]));
                     error = BP(y.Row(idx[i]));
+                    Console.WriteLine("=====> Error = {0}", error);
+                    w[0].Print("w0");
+                    w[1].Print("w1");
                 }
                 idx.Shuffle();
                 epoch++;

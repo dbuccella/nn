@@ -10,6 +10,21 @@ namespace tester
     class Program
     {
         const double Mu = 0.1;
+
+        static double[,] S = new double[,]  {
+            {0.0, 0.0},
+            {0.0, 1.0},
+            {1.0, 0.0},
+            {1.0, 1.0}
+            };
+
+        static double[,] XOR = new double[,]  {
+            {-1.0},
+            {1.0},
+            {1.0},
+            {-1.0}
+            };
+
         static double[,] X = new double[,] {
         {0.2, 1.020562258},
         {0.43, 1.218506908},
@@ -251,12 +266,16 @@ namespace tester
         static void Main(string[] args)
         {
             mlp net = new mlp();
-            Matrix x = new Matrix(X);
-            Matrix y = new Matrix(Y);
+            Matrix x = new Matrix(S);
+            Matrix y = new Matrix(XOR);
+            //y.Map((v) => (v == 0.0) ? -1.0 : 1.0);
+
             net.Train(x, y);
-            Matrix vx = new Matrix(VX);
-            Matrix vy = new Matrix(VY);
-            net.Verify(vx, vy);
+            //Matrix vx = new Matrix(VX);
+            //Matrix vy = new Matrix(VY);
+            //vy.Map((v) => (v == 0.0) ? -1.0 : 1.0);
+
+            net.Verify(x, y);
         }
 
 
