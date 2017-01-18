@@ -41,7 +41,7 @@ namespace math
 
     public class mlp
     {
-        const double Mu = 0.1;
+        const double Mu = 0.05;
 
         Matrix[] w;
         Matrix[] a;
@@ -80,18 +80,17 @@ namespace math
         */
         public mlp()
         {
-            w = new Matrix[2];
-            a = new Matrix[3];
-            z = new Matrix[3];
+            w = new Matrix[3];
+            a = new Matrix[4];
+            z = new Matrix[4];
             w[0] = new Matrix(2, 2);
-            w[1] = new Matrix(1, 2);
+            w[1] = new Matrix(2, 2);
+            w[2] = new Matrix(1, 2);
         }
         public void InitWeights()
         {
-            //for (int i = 0; i < _hiddenLayers; i++)
-            //    w[i].FillRandom(-1, 1);
-            w[0].FillRandom(-1.0, 1.0);
-            w[1].FillRandom(-1.0, 1.0);
+            for (int i = 0; i < 3; i++)
+                w[i].FillRandom(-0.5, 0.5);
         }
 
         void FF(Matrix x)
@@ -108,12 +107,14 @@ namespace math
             a[1] = z[1].MapNew(Activate);
             z[2] = w[1].Dot(a[1]);
             a[2] = z[2].MapNew(Activate);
+            z[3] = w[2].Dot(a[2]);
+            a[3] = z[3].MapNew(Activate);
 
         }
 
         double BP(Matrix y)
         {
-            Matrix e = y.Transpose() - a[2];
+            Matrix e = y.Transpose() - a[3];
             /*
             Matrix d2 = e * (a[2].MapNew(Prime));
             Matrix d1 = w[1].Transpose().Dot(d2) * (a[1].MapNew(Prime));
@@ -122,9 +123,11 @@ namespace math
             Matrix dw0 = d1.Dot(a[0].Transpose());
             */
             ///*
-            Matrix d2 = e * (z[2].MapNew(Prime));
+            Matrix d3 = e * (z[3].MapNew(Prime));
+            Matrix d2 = w[2].Transpose().Dot(d3) * (z[2].MapNew(Prime));
             Matrix d1 = w[1].Transpose().Dot(d2) * (z[1].MapNew(Prime));
             //
+            Matrix dw2 = d3.Dot(a[2].Transpose());
             Matrix dw1 = d2.Dot(a[1].Transpose());
             Matrix dw0 = d1.Dot(a[0].Transpose());
             //*/
@@ -132,6 +135,7 @@ namespace math
             //
             w[0] = w[0] + dw0.Multiply(Mu);
             w[1] = w[1] + dw1.Multiply(Mu);
+            w[2] = w[2] + dw2.Multiply(Mu);
 
             return e.SquaredError();
         }
@@ -142,7 +146,7 @@ namespace math
             int epoch = 0;
             double error = 1.0;
             InitWeights();
-            while ((error > 0.00001) && ((epoch < 10000)))
+            while ((error > 0.000001) && ((epoch < 10000)))
             {
                 double epoch_err = 0.0;
                 for (int i = 0; i < x.Rows; i++)
