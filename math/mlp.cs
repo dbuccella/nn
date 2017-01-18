@@ -45,6 +45,7 @@ namespace math
 
         Matrix[] w;
         Matrix[] a;
+        Matrix[] z;
         int _inpSz;
         int _hiddenNodes;
         int _hiddenLayers;
@@ -81,10 +82,9 @@ namespace math
         {
             w = new Matrix[2];
             a = new Matrix[3];
+            z = new Matrix[3];
             w[0] = new Matrix(2, 2);
             w[1] = new Matrix(1, 2);
-            a[0] = null;
-            a[1] = null;
         }
         public void InitWeights()
         {
@@ -96,19 +96,39 @@ namespace math
 
         void FF(Matrix x)
         {
+            /*
             a[0] = x.Transpose();
             a[1] = w[0].Dot(a[0]).Map(Activate);
             a[2] = w[1].Dot(a[1]).Map(Activate);
+            */
+
+            z[0] = x.Transpose();
+            a[0] = x.Transpose();
+            z[1] = w[0].Dot(a[0]);
+            a[1] = z[1].MapNew(Activate);
+            z[2] = w[1].Dot(a[1]);
+            a[2] = z[2].MapNew(Activate);
+
         }
 
         double BP(Matrix y)
         {
             Matrix e = y.Transpose() - a[2];
-            Matrix d2 = e * (a[2].Map(Prime));
-            Matrix d1 = w[1].Transpose().Dot(d2) * (a[1].Map(Prime));
+            /*
+            Matrix d2 = e * (a[2].MapNew(Prime));
+            Matrix d1 = w[1].Transpose().Dot(d2) * (a[1].MapNew(Prime));
             //
             Matrix dw1 = d2.Dot(a[1].Transpose());
             Matrix dw0 = d1.Dot(a[0].Transpose());
+            */
+            ///*
+            Matrix d2 = e * (z[2].MapNew(Prime));
+            Matrix d1 = w[1].Transpose().Dot(d2) * (z[1].MapNew(Prime));
+            //
+            Matrix dw1 = d2.Dot(a[1].Transpose());
+            Matrix dw0 = d1.Dot(a[0].Transpose());
+            //*/
+
             //
             w[0] = w[0] + dw0.Multiply(Mu);
             w[1] = w[1] + dw1.Multiply(Mu);
@@ -122,30 +142,37 @@ namespace math
             int epoch = 0;
             double error = 1.0;
             InitWeights();
-            while ((error > 0.001) && ((epoch < 10000)))
+            while ((error > 0.00001) && ((epoch < 10000)))
             {
+                double epoch_err = 0.0;
                 for (int i = 0; i < x.Rows; i++)
                 {
                     FF(x.Row(idx[i]));
-                    error = BP(y.Row(idx[i]));
-                    Console.WriteLine("=====> Error = {0}", error);
-                    w[0].Print("w0");
-                    w[1].Print("w1");
+                    epoch_err += BP(y.Row(idx[i]));
+                    //Console.WriteLine("=====> Error = {0}", epoch_err);
+                    //w[0].Print("w0");
+                    //w[1].Print("w1");
                 }
+                error = epoch_err;
                 idx.Shuffle();
                 epoch++;
-                if ((epoch % 50) == 0)
+                //if ((epoch % 5) == 0)
                     Console.WriteLine("=====> Error = {0}", error);
             }
+            Console.WriteLine("Final Error = {0} iter = {1}", error, epoch);
         }
 
         public void Verify(Matrix x, Matrix y)
         {
+            double epsilon = 0.1;
+            double matches = 0.0;
             for (int i = 0; i < x.Rows; i++)
             {
                 FF(x.Row(i));
+                matches = matches + ((Math.Abs(a[1][0, 0] - y[i, 0]) <= epsilon) ? 1.0 : 0.0);
                 Console.WriteLine("target = {0} | actual = {1}", a[1][0, 0], y[i, 0]);
             }
+            Console.WriteLine("Accuracy= {0:N2}", matches / x.Rows);
         }
     }
 }
