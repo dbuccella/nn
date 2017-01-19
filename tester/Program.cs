@@ -1,6 +1,7 @@
 ﻿using math;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -266,17 +267,18 @@ namespace tester
         static void Main(string[] args)
         {
             mlp net = new mlp();
-            Matrix x = new Matrix(X);
-            Matrix y = new Matrix(Y);
-            y.Map((v) => (v == 0.0) ? -1.0 : 1.0);
+            Matrix x = new Matrix(DataSets.polyX);
+            Matrix y = new Matrix(DataSets.polyY);
+            //y.Map((v) => (v == 0.0) ? -1.0 : 1.0);
 
             net.Train(x, y);
-            Matrix vx = new Matrix(VX);
-            Matrix vy = new Matrix(VY);
-            vy.Map((v) => (v == 0.0) ? -1.0 : 1.0);
+            //Matrix vx = new Matrix(VX);
+            //Matrix vy = new Matrix(VY);
+            //vy.Map((v) => (v == 0.0) ? -1.0 : 1.0);
 
             net.Verify(x, y);
-            net.Verify(vx, vy);
+            //net.Verify(vx, vy);
+            //DataGen.Go("c:\\source\\data.txt");
         }
 
 

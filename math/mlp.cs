@@ -58,7 +58,7 @@ namespace math
         {
             return Math.Tanh(x);
         }
-        /*        
+
         public mlp(
                 int inpSz,
                 int hiddenNodes,
@@ -69,15 +69,18 @@ namespace math
             _hiddenNodes = hiddenNodes;
             _hiddenLayers = hiddenLayers;
             _outSz = outSz;
+
             w = new Matrix[_hiddenLayers];
             a = new Matrix[_hiddenLayers + 1];
+            z = new Matrix[_hiddenLayers + 1];
+            //
             // build weights matrices
-            w[0] = new Matrix(_hiddenNodes, _inpSz);
+            w[0] = new Matrix(_inpSz, _hiddenNodes);
             for (int i = 1; i < _hiddenLayers-1; i++)
                 w[i] = new Matrix(_hiddenNodes, _hiddenNodes);
             w[_hiddenLayers - 1] = new Matrix(_outSz, _hiddenNodes);
         }
-        */
+
         public mlp()
         {
             w = new Matrix[3];
@@ -87,6 +90,7 @@ namespace math
             w[1] = new Matrix(2, 2);
             w[2] = new Matrix(1, 2);
         }
+
         public void InitWeights()
         {
             for (int i = 0; i < 3; i++)
@@ -145,6 +149,8 @@ namespace math
             Indexer idx = new Indexer(x.Rows);
             int epoch = 0;
             double error = 1.0;
+            double minError = 100000000000.0;
+            int minIter = 0;
             InitWeights();
             while ((error > 0.000001) && ((epoch < 10000)))
             {
@@ -152,8 +158,15 @@ namespace math
                 for (int i = 0; i < x.Rows; i++)
                 {
                     FF(x.Row(idx[i]));
-                    epoch_err += BP(y.Row(idx[i]));
-                    //Console.WriteLine("=====> Error = {0}", epoch_err);
+                    double e = BP(y.Row(idx[i]));
+                    epoch_err += e;
+                    if (e < minError)
+                    {
+                        minError = e;
+                        minIter = epoch;
+                        Console.WriteLine("e = {0} - iter= {1},{2}", e, epoch, i);
+                    }
+                    //Console.WriteLine("e = {0}", e);
                     //w[0].Print("w0");
                     //w[1].Print("w1");
                 }
@@ -161,7 +174,7 @@ namespace math
                 idx.Shuffle();
                 epoch++;
                 //if ((epoch % 5) == 0)
-                    Console.WriteLine("=====> Error = {0}", error);
+                    //Console.WriteLine("=====> Error = {0}", error);
             }
             Console.WriteLine("Final Error = {0} iter = {1}", error, epoch);
         }
