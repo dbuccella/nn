@@ -143,7 +143,7 @@ namespace tester
             int epoch = 0;
             double error = 1.0;
 
-            while ((error > 0.1) && ((epoch < 10000)))
+            while ((error > 0.25) && ((epoch < 10000)))
             {
                 Matrix e = null;
                 for (int i = 0; i < x.Rows; i++)
@@ -266,21 +266,23 @@ namespace tester
 
         static void Main(string[] args)
         {
-            mlp net = new mlp();
-            Matrix x = new Matrix(DataSets.polyX);
-            Matrix y = new Matrix(DataSets.polyY);
+            mlp net = new mlp(2,3,2,1);
+            Matrix x = new Matrix(DataSets.circ_X);
+            Matrix y = new Matrix(DataSets.circ_Y);
             //y.Map((v) => (v == 0.0) ? -1.0 : 1.0);
 
             net.Train(x, y);
-            //Matrix vx = new Matrix(VX);
-            //Matrix vy = new Matrix(VY);
+            Matrix vx = new Matrix(DataSets.circ_VX);
+            Matrix vy = new Matrix(DataSets.circ_VY);
             //vy.Map((v) => (v == 0.0) ? -1.0 : 1.0);
 
             net.Verify(x, y);
-            //net.Verify(vx, vy);
-            //DataGen.Go("c:\\source\\data.txt");
+            net.Verify(vx, vy);
+        }
+        static void Main0(string[] args)
+        {
+            DataGen.Go2D("c:\\src\\circ.txt", "circ", (x) => Math.Sqrt(20 - Math.Pow(x, 2.0)/8.0), 50, 0.5, 0.15);
         }
 
-
     }
-}
+    }

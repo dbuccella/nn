@@ -213,24 +213,182 @@ namespace math
         { 1.0 },
         { -1.0 },
     };
+        public static double[,] circ_X = new double[,]  {
+        { 0.50, 5.18580 },
+        { 0.65, 4.75075 },
+        { 0.80, 4.35552 },
+        { 0.95, 4.74126 },
+        { 1.10, 3.90311 },
+        { 1.25, 4.47276 },
+        { 1.40, 4.27790 },
+        { 1.55, 4.71050 },
+        { 1.70, 4.08960 },
+        { 1.85, 4.44466 },
+        { 2.00, 3.91984 },
+        { 2.15, 3.79381 },
+        { 2.30, 5.20926 },
+        { 2.45, 3.68943 },
+        { 2.60, 4.13921 },
+        { 2.75, 5.11177 },
+        { 2.90, 4.11521 },
+        { 3.05, 4.57194 },
+        { 3.20, 3.84892 },
+        { 3.35, 4.95948 },
+        { 3.50, 4.72618 },
+        { 3.65, 5.10875 },
+        { 3.80, 3.42955 },
+        { 3.95, 3.83666 },
+        { 4.10, 4.16207 },
+        { 4.25, 4.90713 },
+        { 4.40, 4.50961 },
+        { 4.55, 3.39014 },
+        { 4.70, 4.96411 },
+        { 4.85, 4.21752 },
+        { 5.00, 4.50911 },
+        { 5.15, 4.31334 },
+        { 5.30, 4.28520 },
+        { 5.45, 3.33036 },
+        { 5.60, 4.43903 },
+        { 5.75, 3.21522 },
+        { 5.90, 3.26604 },
+        { 6.05, 3.79536 },
+        { 6.20, 4.73501 },
+        { 6.35, 4.57455 },
+        { 6.50, 4.32043 },
+        { 6.65, 3.46876 },
+        { 6.80, 3.27065 },
+        { 6.95, 4.55780 },
+        { 7.10, 3.82401 },
+        { 7.25, 3.86537 },
+        { 7.40, 4.44664 },
+        { 7.55, 4.04866 },
+        { 7.70, 3.86028 },
+        { 7.85, 3.76038 },
+    };
+        public static double[,] circ_Y = new double[,]  {
+        { -1.0 },
+        { -1.0 },
+        { 1.0 },
+        { -1.0 },
+        { 1.0 },
+        { -1.0 },
+        { 1.0 },
+        { -1.0 },
+        { 1.0 },
+        { -1.0 },
+        { 1.0 },
+        { 1.0 },
+        { -1.0 },
+        { 1.0 },
+        { 1.0 },
+        { -1.0 },
+        { 1.0 },
+        { -1.0 },
+        { 1.0 },
+        { -1.0 },
+        { -1.0 },
+        { -1.0 },
+        { 1.0 },
+        { 1.0 },
+        { 1.0 },
+        { -1.0 },
+        { -1.0 },
+        { 1.0 },
+        { -1.0 },
+        { -1.0 },
+        { -1.0 },
+        { -1.0 },
+        { -1.0 },
+        { 1.0 },
+        { -1.0 },
+        { 1.0 },
+        { 1.0 },
+        { 1.0 },
+        { -1.0 },
+        { -1.0 },
+        { -1.0 },
+        { 1.0 },
+        { 1.0 },
+        { -1.0 },
+        { -1.0 },
+        { -1.0 },
+        { -1.0 },
+        { -1.0 },
+        { -1.0 },
+        { -1.0 },
+    };
+        public static double[,] circ_VX = new double[,]  {
+        { 0.80, 4.10501 },
+        { 1.05, 3.81133 },
+        { 1.30, 4.17138 },
+        { 1.55, 4.57385 },
+        { 1.80, 4.87468 },
+        { 2.05, 5.16257 },
+        { 2.30, 4.65888 },
+        { 2.55, 3.82525 },
+        { 2.80, 3.85233 },
+        { 3.05, 3.95236 },
+        { 3.30, 4.88226 },
+        { 3.55, 4.04905 },
+        { 3.80, 4.58471 },
+        { 4.05, 4.66680 },
+        { 4.30, 4.68447 },
+        { 4.55, 4.30734 },
+        { 4.80, 4.15906 },
+        { 5.05, 4.75808 },
+        { 5.30, 3.79281 },
+        { 5.55, 3.69014 },
+        { 5.80, 4.55146 },
+        { 6.05, 4.68093 },
+        { 6.30, 4.13205 },
+        { 6.55, 3.50059 },
+        { 6.80, 3.07481 },
+    };
+        public static double[,] circ_VY = new double[,]  {
+        { 1.0 },
+        { 1.0 },
+        { 1.0 },
+        { -1.0 },
+        { -1.0 },
+        { -1.0 },
+        { -1.0 },
+        { 1.0 },
+        { 1.0 },
+        { 1.0 },
+        { -1.0 },
+        { 1.0 },
+        { -1.0 },
+        { -1.0 },
+        { -1.0 },
+        { -1.0 },
+        { -1.0 },
+        { -1.0 },
+        { 1.0 },
+        { 1.0 },
+        { -1.0 },
+        { -1.0 },
+        { -1.0 },
+        { 1.0 },
+        { 1.0 },
+    };
 
     }
 
 
     public class DataGen
     {
-        public static double Fn(double x)
+        public  delegate double GFn(double x);
+
+        public static double Poly1(double x)
         {
             return 5.0 / (Math.Pow(x, 3.0)) - Math.Pow(x, 2.0) + x - 10.0;
         }
 
-        public static void Go(string outFn)
+        public static void Go2D(string outFn, string prefix, GFn fn, int points, double start, double step)
         {
             Random gen = new Random(DateTime.Now.Millisecond);
             TextWriter f = File.CreateText(outFn);
-            double start = 0.2;
-            double step = 0.2;
-            int points = 100;
+            //
             double[] y = new double[points];
             double[] x1 = new double[points];
 
@@ -238,7 +396,7 @@ namespace math
             double x = start;
             for (int i = 0; i < points; i++)
             {
-                y[i] = Fn(x);
+                y[i] = fn(x);
                 x += step;
             }
             double yavg = y.Average();
@@ -250,7 +408,7 @@ namespace math
                 x1[i] = y[i] + ((2.0 * gen.NextDouble() - 1.0) * 3.0 * stddev);
             // create file
             // input
-            f.WriteLine("\tstatic double[,] X = new double[,]  {");
+            f.WriteLine("\tstatic double[,] {0}_X = new double[,]  {{", prefix);
             x = start;
             for (int i = 0; i < points; i++)
             {
@@ -260,10 +418,32 @@ namespace math
             f.WriteLine("\t};");
 
             // output
-            f.WriteLine("\tstatic double[,] Y = new double[,]  {");
+            f.WriteLine("\tstatic double[,] {0}_Y = new double[,]  {{", prefix);
             for (int i = 0; i < points; i++)
                 f.WriteLine("\t\t{{ {0:N1} }},", ((x1[i] > y[i]) ? -1.0 : 1.0));
             f.WriteLine("\t};");
+
+            // ver data
+            x = start + 0.3;
+            double[] vr = new double[points / 2];
+            f.WriteLine("\tstatic double[,] {0}_VX = new double[,]  {{", prefix);
+            for (int i = 0; i < points/2; i++)
+            {
+                double yv = fn(x);
+                double xv = yv + ((2.0 * gen.NextDouble() - 1.0) * 3.0 * stddev);
+                f.WriteLine("\t\t{{ {0:N2}, {1:N5} }},", x, xv);
+                vr[i] = (xv > yv)?-1.0:1.0;               
+                x += (step + 0.1);
+            }
+            f.WriteLine("\t};");
+
+            f.WriteLine("\tstatic double[,] {0}_VY = new double[,]  {{", prefix);
+            for (int i = 0; i < points / 2; i++)
+            {
+                f.WriteLine("\t\t{{ {0:N1} }},", vr[i]);
+            }
+            f.WriteLine("\t};");
+
             f.Close();
         }
 

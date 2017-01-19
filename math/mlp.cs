@@ -41,7 +41,7 @@ namespace math
 
     public class mlp
     {
-        const double Mu = 0.05;
+        const double Mu = 0.1;
 
         Matrix[] w;
         Matrix[] a;
@@ -50,6 +50,8 @@ namespace math
         int _hiddenNodes;
         int _hiddenLayers;
         int _outSz;
+        double _epsilon;
+
         public static double Prime(double x)
         {
             return (1.0 - Math.Pow(Math.Tanh(x), 2.0));
@@ -63,13 +65,15 @@ namespace math
                 int inpSz,
                 int hiddenNodes,
                 int hiddenLayers,
-                int outSz)
+                int outSz,
+                double epsilon = 0.1)
         {
             _inpSz = inpSz;
             _hiddenNodes = hiddenNodes;
             _hiddenLayers = hiddenLayers;
             _outSz = outSz;
-
+            _epsilon = epsilon;
+            //
             w = new Matrix[_hiddenLayers];
             a = new Matrix[_hiddenLayers + 1];
             z = new Matrix[_hiddenLayers + 1];
@@ -93,18 +97,13 @@ namespace math
 
         public void InitWeights()
         {
-            for (int i = 0; i < 3; i++)
-                w[i].FillRandom(-0.5, 0.5);
+            for (int i = 0; i < _hiddenLayers; i++)
+                w[i].FillRandom(-0.99, 0.99);
         }
 
         void FF(Matrix x)
         {
             /*
-            a[0] = x.Transpose();
-            a[1] = w[0].Dot(a[0]).Map(Activate);
-            a[2] = w[1].Dot(a[1]).Map(Activate);
-            */
-
             z[0] = x.Transpose();
             a[0] = x.Transpose();
             z[1] = w[0].Dot(a[0]);
@@ -113,20 +112,23 @@ namespace math
             a[2] = z[2].MapNew(Activate);
             z[3] = w[2].Dot(a[2]);
             a[3] = z[3].MapNew(Activate);
+            */
 
+            z[0] = x.Transpose();
+            a[0] = x.Transpose();
+
+            for (int i = 1; i <= _hiddenLayers; i++)
+            {
+                z[i] = w[i-1].Dot(a[i-1]);
+                a[i] = z[i].MapNew(Activate);
+            }
         }
 
         double BP(Matrix y)
         {
-            Matrix e = y.Transpose() - a[3];
             /*
-            Matrix d2 = e * (a[2].MapNew(Prime));
-            Matrix d1 = w[1].Transpose().Dot(d2) * (a[1].MapNew(Prime));
-            //
-            Matrix dw1 = d2.Dot(a[1].Transpose());
-            Matrix dw0 = d1.Dot(a[0].Transpose());
-            */
-            ///*
+            Matrix e = y.Transpose() - a[3];
+
             Matrix d3 = e * (z[3].MapNew(Prime));
             Matrix d2 = w[2].Transpose().Dot(d3) * (z[2].MapNew(Prime));
             Matrix d1 = w[1].Transpose().Dot(d2) * (z[1].MapNew(Prime));
@@ -134,7 +136,6 @@ namespace math
             Matrix dw2 = d3.Dot(a[2].Transpose());
             Matrix dw1 = d2.Dot(a[1].Transpose());
             Matrix dw0 = d1.Dot(a[0].Transpose());
-            //*/
 
             //
             w[0] = w[0] + dw0.Multiply(Mu);
@@ -142,6 +143,25 @@ namespace math
             w[2] = w[2] + dw2.Multiply(Mu);
 
             return e.SquaredError();
+            */
+
+            Matrix err = y.Transpose() - a[_hiddenLayers];
+            Matrix[] d = new Matrix[_hiddenLayers + 1];
+
+            // output layer
+            d[_hiddenLayers] = err * (z[_hiddenLayers].MapNew(Prime));
+            for (int i  = _hiddenLayers - 1; i  >= 1; i--)
+            {
+                d[i] = w[i].Transpose().Dot(d[i+1]) * (z[i].MapNew(Prime));
+            }
+            //d[_hiddenLayers - 1] = w[_hiddenLayers - 1].Transpose().Dot(d[_hiddenLayers]) * (z[_hiddenLayers - 1].MapNew(Prime));
+            //d[_hiddenLayers - 2] = w[_hiddenLayers - 2].Transpose().Dot(d[_hiddenLayers-1]) * (z[_hiddenLayers - 2].MapNew(Prime));
+
+            for (int i = 0; i < _hiddenLayers; i++)
+            {
+                w[i] = w[i] + d[i+1].Dot(a[i].Transpose()).Multiply(Mu);
+            }
+            return err.SquaredError();
         }
 
         public void Train(Matrix x, Matrix y)
@@ -152,7 +172,7 @@ namespace math
             double minError = 100000000000.0;
             int minIter = 0;
             InitWeights();
-            while ((error > 0.000001) && ((epoch < 10000)))
+            while ((error > _epsilon) && ((epoch < 10000)))
             {
                 double epoch_err = 0.0;
                 for (int i = 0; i < x.Rows; i++)
@@ -160,22 +180,31 @@ namespace math
                     FF(x.Row(idx[i]));
                     double e = BP(y.Row(idx[i]));
                     epoch_err += e;
+                    /*
                     if (e < minError)
                     {
                         minError = e;
                         minIter = epoch;
                         Console.WriteLine("e = {0} - iter= {1},{2}", e, epoch, i);
                     }
+                    */
                     //Console.WriteLine("e = {0}", e);
                     //w[0].Print("w0");
                     //w[1].Print("w1");
                 }
-                error = epoch_err;
+                error = epoch_err/x.Rows;
+                if (error < minError)
+                {
+                    minError = error;
+                    minIter = epoch;
+                    Console.WriteLine("e = {0} - iter= {1}", error, epoch);
+                }
                 idx.Shuffle();
                 epoch++;
                 //if ((epoch % 5) == 0)
                     //Console.WriteLine("=====> Error = {0}", error);
             }
+            Console.WriteLine("e = {0} - iter= {1}", minError, minIter);
             Console.WriteLine("Final Error = {0} iter = {1}", error, epoch);
         }
 
