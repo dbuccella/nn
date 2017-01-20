@@ -242,7 +242,6 @@ namespace math
             }
             return r;
         }
-
         public static Matrix Transpose(Matrix a)
         {
             Matrix r = new Matrix(a._columns, a._rows);

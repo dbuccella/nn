@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 namespace math
 {
+    public delegate void ReportProgress(int pct, object context);
+
     public class Indexer
     {
         private int[] _idx;
@@ -114,13 +116,14 @@ namespace math
             a[3] = z[3].MapNew(Activate);
             */
 
-            z[0] = x.Transpose();
+            //z[0] = x.Transpose();
             a[0] = x.Transpose();
             
             for (int i = 1; i <= _hiddenLayers; i++)
             {
-                z[i] = w[i-1].Dot(a[i-1]);
-                a[i] = z[i].MapNew(Activate);
+                //z[i] = w[i-1].Dot(a[i-1]);
+                //a[i] = z[i].MapNew(Activate);
+                a[i] = w[i-1].Dot(a[i-1]).MapNew(Activate);
             }
         }
 
@@ -149,19 +152,21 @@ namespace math
             Matrix[] d = new Matrix[_hiddenLayers + 1];
 
             // output layer
-            d[_hiddenLayers] = err * (z[_hiddenLayers].MapNew(Prime));
+            //d[_hiddenLayers] = err * (z[_hiddenLayers].MapNew(Prime));
+            d[_hiddenLayers] = err * (a[_hiddenLayers].MapNew((v) => 1.0 - v*v));
             for (int i  = _hiddenLayers - 1; i  >= 1; i--)
             {
-                d[i] = w[i].Transpose().Dot(d[i+1]) * (z[i].MapNew(Prime));
+                //d[i] = w[i].Transpose().Dot(d[i + 1]) * (z[i].MapNew(Prime));
+                d[i] = w[i].Transpose().Dot(d[i + 1]) * (a[i].MapNew((v) => 1.0 - v * v));
             }
             for (int i = 0; i < _hiddenLayers; i++)
             {
-                w[i] = w[i] + d[i+1].Dot(a[i].Transpose()).Multiply(Mu);
+                w[i].Sum(d[i + 1].Dot(a[i].Transpose()).Multiply(Mu));
             }
             return err.SquaredError();
         }
 
-        public void Train(Matrix x, Matrix y)
+        public void Train(Matrix x, Matrix y, ReportProgress pFn = null)
         {
             Indexer idx = new Indexer(x.Rows);
             int epoch = 0;
@@ -190,19 +195,24 @@ namespace math
                     //w[1].Print("w1");
                 }
                 error = epoch_err/x.Rows;
+                /*
                 if (error < minError)
                 {
                     minError = error;
                     minIter = epoch;
                     Console.WriteLine("e = {0} - iter= {1}", error, epoch);
                 }
+                */
                 idx.Shuffle();
                 epoch++;
-                //if ((epoch % 5) == 0)
+                if ((epoch % 50) == 0)
+                {
+                    pFn?.Invoke(50000 / epoch, error);
                     //Console.WriteLine("=====> Error = {0}", error);
+                }
             }
-            Console.WriteLine("e = {0} - iter= {1}", minError, minIter);
-            Console.WriteLine("Final Error = {0} iter = {1}", error, epoch);
+            //Console.WriteLine("e = {0} - iter= {1}", minError, minIter);
+            //Console.WriteLine("Final Error = {0} iter = {1}", error, epoch);
         }
 
         public void Verify(Matrix x, Matrix y)

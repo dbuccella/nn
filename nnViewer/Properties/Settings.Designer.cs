@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace nn.Properties
+namespace nnViewer.Properties
 {
 
 

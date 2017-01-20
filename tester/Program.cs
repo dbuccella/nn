@@ -281,8 +281,20 @@ namespace tester
         }
         static void Main0(string[] args)
         {
-            DataGen.Go2D("c:\\src\\circ.txt", "circ", (x) => Math.Sqrt(20 - Math.Pow(x, 2.0)/8.0), 50, 0.5, 0.15);
+            DataGen.Go2D("c:\\src\\circ.txt", "circ", (x) => Math.Sqrt(20 - Math.Pow(x, 2.0) / 8.0), 50, 0.5, 0.15);
+        }
+        static void Main01(string[] args)
+        {
+            Matrix x = new Matrix(new double[,]  {
+            {1.0, 2.0, 3.0},
+            {4.0, 5.0, 6.0},
+            {7.0, 8.0, 9.0}
+            });
+
+            x.Print("x");
+            x.Transpose().Print("x.T");
+            //x.Transpose2().Print("x.T2");
         }
 
     }
-    }
+}
