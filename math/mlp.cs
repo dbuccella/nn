@@ -41,7 +41,7 @@ namespace math
 
     public class mlp
     {
-        const double Mu = 0.1;
+        const double Mu = -0.1;
 
         Matrix[] w;
         Matrix[] a;
@@ -79,7 +79,7 @@ namespace math
             z = new Matrix[_hiddenLayers + 1];
             //
             // build weights matrices
-            w[0] = new Matrix(_inpSz, _hiddenNodes);
+            w[0] = new Matrix(_hiddenNodes, _inpSz);
             for (int i = 1; i < _hiddenLayers-1; i++)
                 w[i] = new Matrix(_hiddenNodes, _hiddenNodes);
             w[_hiddenLayers - 1] = new Matrix(_outSz, _hiddenNodes);
@@ -116,7 +116,7 @@ namespace math
 
             z[0] = x.Transpose();
             a[0] = x.Transpose();
-
+            
             for (int i = 1; i <= _hiddenLayers; i++)
             {
                 z[i] = w[i-1].Dot(a[i-1]);
@@ -154,9 +154,6 @@ namespace math
             {
                 d[i] = w[i].Transpose().Dot(d[i+1]) * (z[i].MapNew(Prime));
             }
-            //d[_hiddenLayers - 1] = w[_hiddenLayers - 1].Transpose().Dot(d[_hiddenLayers]) * (z[_hiddenLayers - 1].MapNew(Prime));
-            //d[_hiddenLayers - 2] = w[_hiddenLayers - 2].Transpose().Dot(d[_hiddenLayers-1]) * (z[_hiddenLayers - 2].MapNew(Prime));
-
             for (int i = 0; i < _hiddenLayers; i++)
             {
                 w[i] = w[i] + d[i+1].Dot(a[i].Transpose()).Multiply(Mu);
@@ -172,7 +169,7 @@ namespace math
             double minError = 100000000000.0;
             int minIter = 0;
             InitWeights();
-            while ((error > _epsilon) && ((epoch < 10000)))
+            while ((error > _epsilon) && ((epoch < 50000)))
             {
                 double epoch_err = 0.0;
                 for (int i = 0; i < x.Rows; i++)
