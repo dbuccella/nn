@@ -56,10 +56,12 @@ namespace math
 
         public static double Prime(double x)
         {
+            //return ((x > 0.0) ? 1.0 : 0.0);
             return (1.0 - x*x);
         }
         public static double Activate(double x)
         {
+            //return ((x > 0.0) ? x : 0.0);
             return Math.Tanh(x);
         }
 
@@ -112,6 +114,12 @@ namespace math
             }
         }
 
+        public void Predict(Matrix x)
+        {
+            FF(x);
+            a[_hiddenLayers - 1].Transpose().Print("a");
+        }
+
         double BP(Matrix y)
         {
             Matrix err = y.Transpose() - a[_hiddenLayers];
@@ -125,18 +133,23 @@ namespace math
             }
             for (int i = 0; i < _hiddenLayers; i++)
             {
-                w[i].Sum(d[i + 1].Dot(a[i].Transpose()).Multiply(Mu));
+                Matrix dw = d[i + 1].Dot(a[i].Transpose()).Multiply(Mu);
+                //dw.Print(String.Format("dw[{0}]", i));
+                w[i].Sum(dw);
+                //w[i].Sum(d[i + 1].Dot(a[i].Transpose()).Multiply(Mu));
             }
+            //err.Print("error");
             return err.SquaredError();
         }
 
-        public void Train(Matrix x, Matrix y, ReportProgress pFn = null)
+        public void Train(Matrix x, Matrix y, int maxEpochs, ReportProgress pFn = null)
         {
             Indexer idx = new Indexer(x.Rows);
             int epoch = 0;
             double error = 1.0;
+            int repStep = maxEpochs / 100;
             InitWeights();
-            while ((error > _epsilon) && ((epoch < 100000)))
+            while ((error > _epsilon) && ((epoch < maxEpochs)))
             {
                 double epoch_err = 0.0;
                 for (int i = 0; i < x.Rows; i++)
@@ -148,9 +161,10 @@ namespace math
                 error = epoch_err/x.Rows;
                 idx.Shuffle();
                 epoch++;
-                if ((epoch % 1000) == 0)
+                if ((epoch % repStep) == 0)
                 {
-                    pFn?.Invoke(100*epoch/100000, error);
+                    pFn?.Invoke(100*epoch/ repStep, error);
+                    Console.WriteLine("Error= {0}", error);
                 }
             }
         }
@@ -184,7 +198,7 @@ namespace math
                     epoch_err += e;
                 }
 
-                error = epoch_err / x.Rows;
+                error = epoch_err / (x.Rows/ BatchSize);
                 idx.Shuffle();
                 epoch++;
                 if ((epoch % 1000) == 0)

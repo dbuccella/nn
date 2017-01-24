@@ -264,9 +264,9 @@ namespace tester
             return (1.0 - Math.Pow(Math.Tanh(x), 2.0));
         }
 
-        static void Main(string[] args)
+        static void Main7(string[] args)
         {
-            mlp net = new mlp(2,3,2,1);
+            mlp net = new mlp(2, 3, 2, 1);
             Matrix x = new Matrix(DataSets.circ_X);
             Matrix y = new Matrix(DataSets.circ_Y);
             //y.Map((v) => (v == 0.0) ? -1.0 : 1.0);
@@ -278,6 +278,26 @@ namespace tester
 
             net.Verify(x, y);
             net.Verify(vx, vy);
+        }
+
+        static void Main(string[] args)
+        {
+            mlp net = new mlp(3, 3, 2, 3);
+            Matrix x = new Matrix(DataSets.class_X);
+            Matrix y = new Matrix(DataSets.class_Y);
+            y.Map((v) => (v == 0.0) ? -1.0 : 1.0);
+
+            net.Train(x, y, 100000);
+            y.Print("Y");
+            net.Predict(x);
+            /*
+            Matrix vx = new Matrix(DataSets.circ_VX);
+            Matrix vy = new Matrix(DataSets.circ_VY);
+            //vy.Map((v) => (v == 0.0) ? -1.0 : 1.0);
+
+            net.Verify(x, y);
+            net.Verify(vx, vy);
+            */
         }
         static void Main0(string[] args)
         {
