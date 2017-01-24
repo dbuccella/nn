@@ -37,6 +37,8 @@ namespace nnViewer
 
         private void button_Click(object sender, RoutedEventArgs e)
         {
+            MainViewModel viewModel = (MainViewModel)DataContext;
+            viewModel.Points.Clear();
             _backgroundWorker.RunWorkerAsync();
         }
 
@@ -67,7 +69,7 @@ namespace nnViewer
             math.Matrix y = new math.Matrix(DataSets.circ_Y);
             //y.Map((v) => (v == 0.0) ? -1.0 : 1.0);
 
-            net.Train(x, y, _backgroundWorker.ReportProgress);
+            net.TrainMB(x, y, _backgroundWorker.ReportProgress);
             /*
             math.Matrix vx = new math.Matrix(DataSets.circ_VX);
             math.Matrix vy = new math.Matrix(DataSets.circ_VY);

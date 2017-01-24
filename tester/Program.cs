@@ -271,7 +271,7 @@ namespace tester
             Matrix y = new Matrix(DataSets.circ_Y);
             //y.Map((v) => (v == 0.0) ? -1.0 : 1.0);
 
-            net.Train(x, y);
+            net.TrainMB(x, y);
             Matrix vx = new Matrix(DataSets.circ_VX);
             Matrix vy = new Matrix(DataSets.circ_VY);
             //vy.Map((v) => (v == 0.0) ? -1.0 : 1.0);
@@ -283,17 +283,32 @@ namespace tester
         {
             DataGen.Go2D("c:\\src\\circ.txt", "circ", (x) => Math.Sqrt(20 - Math.Pow(x, 2.0) / 8.0), 50, 0.5, 0.15);
         }
-        static void Main01(string[] args)
+        static void Main03(string[] args)
         {
             Matrix x = new Matrix(new double[,]  {
             {1.0, 2.0, 3.0},
             {4.0, 5.0, 6.0},
             {7.0, 8.0, 9.0}
             });
-
             x.Print("x");
-            x.Transpose().Print("x.T");
-            //x.Transpose2().Print("x.T2");
+            /*
+            x.RowSlice(0, 2).Print("slice - first 2");
+            x.RowSlice(1, 2).Print("slice - last 2");
+            x.RowSlice(1, 1).Print("slice - middle");
+            x.RowSlice(2, 1).Print("slice - last");
+            */
+            Matrix y = new Matrix(new double[,]  {
+            {9.0, 8.0, 7.0},
+            {6.0, 5.0, 4.0},
+            {3.0, 2.0, 1.0}
+            });
+
+            y.Print("y");
+            x.AppendRows(y, 2, 1);
+            x.Print("x + y(2,1)");
+            x.AppendRows(y, 0, 2);
+            x.Print("x + y(0,2)");
+
         }
 
     }

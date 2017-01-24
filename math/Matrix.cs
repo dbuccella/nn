@@ -18,19 +18,24 @@ namespace math
                 throw new Exception("Not the same dimension");
         }
 
+        public Matrix()
+        {
+            _rows = 0;
+            _columns = 0;
+            _data = null;
+        }
+
         public Matrix(int rows, int columns)
         {
             _rows = rows;
             _columns = columns;
             _data = new double[rows * columns];
-            FillZero();
         }
         public Matrix(int columns)
         {
             _rows = 1;
             _columns = columns;
             _data = new double[columns];
-            FillZero();
         }
 
         public Matrix(Matrix a)
@@ -82,6 +87,30 @@ namespace math
                 r[k, 0] = this[k,i]; 
             }
             return r;
+        }
+
+        public Matrix RowSlice(int rowStart, int rowCount)
+        {
+            if ((rowStart + rowCount) > _rows)
+                throw new Exception("Slice too large");
+            if (rowStart >= _rows)
+                throw new Exception("Invalid slice specification");
+            Matrix r = new Matrix(rowCount, _columns);
+            Array.Copy(_data, rowStart * _columns, r._data, 0, rowCount*_columns);
+            return r;
+        }
+
+        public void AppendRows(Matrix src, int rowStart, int rowCount)
+        {
+            if ((rowStart + rowCount) > src._rows)
+                throw new Exception("Slice too large");
+            if (rowStart >= src._rows)
+                throw new Exception("Invalid slice specification");
+            if (_columns != src._columns)
+                throw new Exception("Not the same column size");
+            Array.Resize<double>(ref _data, (_rows + rowCount) * _columns);
+            Array.Copy(src._data, rowStart * _columns, _data, _rows*_columns, rowCount * _columns);
+            _rows += rowCount;
         }
 
         public Matrix Copy(Matrix a)

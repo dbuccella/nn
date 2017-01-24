@@ -24,16 +24,16 @@ namespace math
         public Indexer(int sz)
         {
             _idx = new int[sz];
+            _gen = new Random(DateTime.Now.Millisecond);
             for (int i = 0; i < sz; i++)
                 _idx[i] = i;
         }
 
         public void Shuffle()
         {
-            Random gen = new Random(DateTime.Now.Millisecond);
             for (int i = 0; i < _idx.Length; i++)
             {
-                int j = gen.Next(_idx.Length - i - 1);
+                int j = _gen.Next(_idx.Length - i - 1);
                 int temp = _idx[i];
                 _idx[i] = _idx[j];
                 _idx[j] = temp;
@@ -43,7 +43,7 @@ namespace math
 
     public class mlp
     {
-        const double Mu = -0.1;
+        const double Mu = -0.3;
 
         Matrix[] w;
         Matrix[] a;
@@ -56,7 +56,7 @@ namespace math
 
         public static double Prime(double x)
         {
-            return (1.0 - Math.Pow(Math.Tanh(x), 2.0));
+            return (1.0 - x*x);
         }
         public static double Activate(double x)
         {
@@ -100,64 +100,28 @@ namespace math
         public void InitWeights()
         {
             for (int i = 0; i < _hiddenLayers; i++)
-                w[i].FillRandom(-0.99, 0.99);
+                w[i].FillRandom(-0.5, 0.5);
         }
 
         void FF(Matrix x)
         {
-            /*
-            z[0] = x.Transpose();
-            a[0] = x.Transpose();
-            z[1] = w[0].Dot(a[0]);
-            a[1] = z[1].MapNew(Activate);
-            z[2] = w[1].Dot(a[1]);
-            a[2] = z[2].MapNew(Activate);
-            z[3] = w[2].Dot(a[2]);
-            a[3] = z[3].MapNew(Activate);
-            */
-
-            //z[0] = x.Transpose();
-            a[0] = x.Transpose();
-            
+            a[0] = x.Transpose();            
             for (int i = 1; i <= _hiddenLayers; i++)
             {
-                //z[i] = w[i-1].Dot(a[i-1]);
-                //a[i] = z[i].MapNew(Activate);
                 a[i] = w[i-1].Dot(a[i-1]).MapNew(Activate);
             }
         }
 
         double BP(Matrix y)
         {
-            /*
-            Matrix e = y.Transpose() - a[3];
-
-            Matrix d3 = e * (z[3].MapNew(Prime));
-            Matrix d2 = w[2].Transpose().Dot(d3) * (z[2].MapNew(Prime));
-            Matrix d1 = w[1].Transpose().Dot(d2) * (z[1].MapNew(Prime));
-            //
-            Matrix dw2 = d3.Dot(a[2].Transpose());
-            Matrix dw1 = d2.Dot(a[1].Transpose());
-            Matrix dw0 = d1.Dot(a[0].Transpose());
-
-            //
-            w[0] = w[0] + dw0.Multiply(Mu);
-            w[1] = w[1] + dw1.Multiply(Mu);
-            w[2] = w[2] + dw2.Multiply(Mu);
-
-            return e.SquaredError();
-            */
-
             Matrix err = y.Transpose() - a[_hiddenLayers];
             Matrix[] d = new Matrix[_hiddenLayers + 1];
 
             // output layer
-            //d[_hiddenLayers] = err * (z[_hiddenLayers].MapNew(Prime));
-            d[_hiddenLayers] = err * (a[_hiddenLayers].MapNew((v) => 1.0 - v*v));
+            d[_hiddenLayers] = err * (a[_hiddenLayers].MapNew(Prime));
             for (int i  = _hiddenLayers - 1; i  >= 1; i--)
             {
-                //d[i] = w[i].Transpose().Dot(d[i + 1]) * (z[i].MapNew(Prime));
-                d[i] = w[i].Transpose().Dot(d[i + 1]) * (a[i].MapNew((v) => 1.0 - v * v));
+                d[i] = w[i].Transpose().Dot(d[i + 1]) * (a[i].MapNew(Prime));
             }
             for (int i = 0; i < _hiddenLayers; i++)
             {
@@ -171,10 +135,8 @@ namespace math
             Indexer idx = new Indexer(x.Rows);
             int epoch = 0;
             double error = 1.0;
-            double minError = 100000000000.0;
-            int minIter = 0;
             InitWeights();
-            while ((error > _epsilon) && ((epoch < 50000)))
+            while ((error > _epsilon) && ((epoch < 100000)))
             {
                 double epoch_err = 0.0;
                 for (int i = 0; i < x.Rows; i++)
@@ -182,38 +144,56 @@ namespace math
                     FF(x.Row(idx[i]));
                     double e = BP(y.Row(idx[i]));
                     epoch_err += e;
-                    /*
-                    if (e < minError)
-                    {
-                        minError = e;
-                        minIter = epoch;
-                        Console.WriteLine("e = {0} - iter= {1},{2}", e, epoch, i);
-                    }
-                    */
-                    //Console.WriteLine("e = {0}", e);
-                    //w[0].Print("w0");
-                    //w[1].Print("w1");
                 }
                 error = epoch_err/x.Rows;
-                /*
-                if (error < minError)
-                {
-                    minError = error;
-                    minIter = epoch;
-                    Console.WriteLine("e = {0} - iter= {1}", error, epoch);
-                }
-                */
                 idx.Shuffle();
                 epoch++;
-                if ((epoch % 50) == 0)
+                if ((epoch % 1000) == 0)
                 {
-                    pFn?.Invoke(50000 / epoch, error);
-                    //Console.WriteLine("=====> Error = {0}", error);
+                    pFn?.Invoke(100*epoch/100000, error);
                 }
             }
-            //Console.WriteLine("e = {0} - iter= {1}", minError, minIter);
-            //Console.WriteLine("Final Error = {0} iter = {1}", error, epoch);
         }
+
+        public void TrainMB(Matrix x, Matrix y, ReportProgress pFn = null)
+        {
+            const int BatchSize = 5;
+
+            Indexer idx = new Indexer(x.Rows);
+            int epoch = 0;
+            double error = 1.0;
+            InitWeights();
+            while ((error > _epsilon) && ((epoch < 100000)))
+            {
+                double epoch_err = 0.0;
+                int j = 0;
+                for (int i = 0; i < x.Rows/BatchSize; i++)
+                {
+                    // make batch
+                    Matrix xb = x.Row(idx[j]);
+                    Matrix yb = y.Row(idx[j]);
+                    j++;
+                    for (int k = 0; k < BatchSize-1; k++)
+                    {
+                        xb.AppendRows(x, idx[j], 1);
+                        yb.AppendRows(y, idx[j], 1);
+                        j++;                        
+                    }
+                    FF(xb);
+                    double e = BP(yb);
+                    epoch_err += e;
+                }
+
+                error = epoch_err / x.Rows;
+                idx.Shuffle();
+                epoch++;
+                if ((epoch % 1000) == 0)
+                {
+                    pFn?.Invoke(100 * epoch / 100000, error);
+                }
+            }
+        }
+
 
         public void Verify(Matrix x, Matrix y)
         {
