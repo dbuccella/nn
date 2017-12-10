@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Utilities;
 
 namespace math
 {
@@ -41,27 +42,57 @@ namespace math
         }
     }
 
+    public class PlotData
+    {
+        public double LossX { get; set; }
+        public double LossY { get; set; }
+
+        public double DeltaX { get; set; }
+        public double DeltaY { get; set; }
+    }
+
+    public class TrainResult
+    {
+        public int Epochs { get; set; }
+        public double Error { get; set; }
+    }
+
+    public class VerifyResult
+    {
+        public double Error { get; set; }
+        public double Accuracy { get; set; }
+        public List<int> Misses { get; set; }
+        public VerifyResult()
+        {
+            Misses = new List<int>();
+        }
+    }
+
     public class mlp
     {
-        const double Mu = -0.3;
+        const double Mu = 0.9;
 
         Matrix[] w;
         Matrix[] a;
-        Matrix[] z;
+        Matrix[] d;
         int _inpSz;
         int _hiddenNodes;
         int _hiddenLayers;
         int _outSz;
         double _epsilon;
+        Matrix[] v;
+
+        public double InitLow { get; set; }
+        public double InitHigh { get; set; }
 
         public static double Prime(double x)
         {
-            //return ((x > 0.0) ? 1.0 : 0.0);
+            //return ((x >= 0.0) ? 1.0 : 0.01);
             return (1.0 - x*x);
         }
         public static double Activate(double x)
         {
-            //return ((x > 0.0) ? x : 0.0);
+            //return ((x >= 0.0) ? x : 0.01*x);
             return Math.Tanh(x);
         }
 
@@ -80,29 +111,36 @@ namespace math
             //
             w = new Matrix[_hiddenLayers];
             a = new Matrix[_hiddenLayers + 1];
-            z = new Matrix[_hiddenLayers + 1];
+            d = new Matrix[_hiddenLayers + 1];
+            v = new Matrix[_hiddenLayers];
             //
             // build weights matrices
             w[0] = new Matrix(_hiddenNodes, _inpSz);
-            for (int i = 1; i < _hiddenLayers-1; i++)
+            v[0] = new Matrix(_hiddenNodes, _inpSz);
+            for (int i = 1; i < _hiddenLayers - 1; i++)
+            {
                 w[i] = new Matrix(_hiddenNodes, _hiddenNodes);
+                v[i] = new Matrix(_hiddenNodes, _hiddenNodes);
+            }
             w[_hiddenLayers - 1] = new Matrix(_outSz, _hiddenNodes);
-        }
-
-        public mlp()
-        {
-            w = new Matrix[3];
-            a = new Matrix[4];
-            z = new Matrix[4];
-            w[0] = new Matrix(2, 2);
-            w[1] = new Matrix(2, 2);
-            w[2] = new Matrix(1, 2);
+            v[_hiddenLayers - 1] = new Matrix(_outSz, _hiddenNodes);
+            InitLow = -0.01;
+            InitHigh = 0.01;
         }
 
         public void InitWeights()
         {
             for (int i = 0; i < _hiddenLayers; i++)
-                w[i].FillRandom(-0.5, 0.5);
+            {
+                w[i].FillRandom(InitLow, InitHigh);
+                v[i].FillZero();
+            }
+        }
+
+        public void Predict(Matrix x)
+        {
+            FF(x);
+            a[_hiddenLayers].Transpose().Print("a");
         }
 
         void FF(Matrix x)
@@ -110,116 +148,276 @@ namespace math
             a[0] = x.Transpose();            
             for (int i = 1; i <= _hiddenLayers; i++)
             {
-                a[i] = w[i-1].Dot(a[i-1]).MapNew(Activate);
+                //a[i] = w[i - 1].Dot(a[i - 1]).MapNew(Activate);
+                a[i] = w[i - 1].Dot(a[i - 1]).Map(Activate);
             }
         }
+        
+        public delegate void WeightUpdate(Matrix dx, int i, double alpha);
 
-        public void Predict(Matrix x)
+        public void Standard(Matrix dx, int i, double alpha)
         {
-            FF(x);
-            a[_hiddenLayers - 1].Transpose().Print("a");
+            // Standard
+            w[i].Sum(dx.Multiply(alpha));
         }
 
-        double BP(Matrix y)
+        public void Momentum(Matrix dx, int i, double alpha)
         {
-            Matrix err = y.Transpose() - a[_hiddenLayers];
-            Matrix[] d = new Matrix[_hiddenLayers + 1];
+            // Momentum
+            v[i] = v[i].Multiply(Mu) - dx.Multiply(alpha);
+            w[i].Sum(v[i]);
+        }
 
+        public void Nesterov(Matrix dx, int i, double alpha)
+        {
+            // Nesterov Momentum
+            Matrix vprev = new Matrix(v[i]);
+            v[i] = v[i].Multiply(Mu) - dx.Multiply(alpha);
+            w[i].Sum(v[i] + (v[i] - vprev).Multiply(Mu));
+        }
+
+        double BP(Matrix y, double alpha, WeightUpdate dwFn = null)
+        {
+            dwFn = (dwFn == null) ? Standard : dwFn;
+            //
+            Matrix err =  a[_hiddenLayers] - y.Transpose();
             // output layer
             d[_hiddenLayers] = err * (a[_hiddenLayers].MapNew(Prime));
             for (int i  = _hiddenLayers - 1; i  >= 1; i--)
             {
                 d[i] = w[i].Transpose().Dot(d[i + 1]) * (a[i].MapNew(Prime));
             }
+            // update weights
             for (int i = 0; i < _hiddenLayers; i++)
             {
-                Matrix dw = d[i + 1].Dot(a[i].Transpose()).Multiply(Mu);
-                //dw.Print(String.Format("dw[{0}]", i));
-                w[i].Sum(dw);
-                //w[i].Sum(d[i + 1].Dot(a[i].Transpose()).Multiply(Mu));
+                Matrix dx = d[i + 1].Dot(a[i].Transpose());
+                dwFn(dx, i, alpha);
             }
-            //err.Print("error");
             return err.SquaredError();
         }
 
-        public void Train(Matrix x, Matrix y, int maxEpochs, ReportProgress pFn = null)
+        public double NextRate(double alpha, int k, double l)
+        {
+            //return alpha / (1.0 + l * k);
+            return alpha*(1.0 - l*k);
+        }
+
+        public TrainResult Train(Matrix x, Matrix y, int maxEpochs, double alpha, ref bool cancel, ReportProgress pFn = null)
         {
             Indexer idx = new Indexer(x.Rows);
             int epoch = 0;
             double error = 1.0;
             int repStep = maxEpochs / 100;
+            double l = alpha/(3.0*maxEpochs);
+            //double delta = 0.0;
             InitWeights();
-            while ((error > _epsilon) && ((epoch < maxEpochs)))
+            while ((! cancel) && (error > _epsilon) && ((epoch < maxEpochs)))
             {
                 double epoch_err = 0.0;
                 for (int i = 0; i < x.Rows; i++)
                 {
                     FF(x.Row(idx[i]));
-                    double e = BP(y.Row(idx[i]));
+                    double e = BP(y.Row(idx[i]), alpha);
                     epoch_err += e;
                 }
                 error = epoch_err/x.Rows;
                 idx.Shuffle();
                 epoch++;
-                if ((epoch % repStep) == 0)
+                //alpha = NextRate(alpha, epoch, l);
+                //PrintModel();
+                if ((epoch < 100) || ((epoch % (repStep)) == 0))
                 {
-                    pFn?.Invoke(100*epoch/ repStep, error);
-                    Console.WriteLine("Error= {0}", error);
+                    //delta = 0.0;
+                    /*
+                    for (int i = _hiddenLayers; i >= 1; i--)
+                    {
+                        delta += d[i].SquaredError();
+                    }
+                    delta /= (_hiddenLayers - 1);
+                    */
+                    /*
+                    for (int i = 0; i<_hiddenLayers; i++)
+                    {
+                        delta += v[i].SquaredError();
+                    }
+                    delta /= _hiddenLayers;
+                    delta *= alpha;
+                    */
+                    PlotData p = new PlotData();
+                    //p.DeltaX = epoch;
+                    //p.DeltaY = delta;
+                    p.LossX = epoch;
+                    p.LossY = error;
+                    pFn?.Invoke(0, p);
+                    //Console.WriteLine("Error= {0}", error);
+                    //PrintModel();
                 }
+            }
+            TrainResult r = new TrainResult();
+            r.Epochs = epoch;
+            r.Error = error;
+            return r;
+        }
+
+        static Matrix MakeBatch(Matrix x, int start, int batchSize, Indexer idx)
+        {
+            // make batch
+            Matrix xb = x.Row(idx[start]);
+            for (int k = start + 1; k < (start + batchSize); k++)
+                xb.AppendRows(x, idx[k], 1);
+            return xb;
+        }
+
+        public TrainResult Train2(Matrix x, Matrix y, int maxEpochs, double alpha, int batchSize, ref bool cancel, ReportProgress pFn = null)
+        {
+            Indexer idx = new Indexer(x.Rows);
+            int epoch = 0;
+            double error = 1.0;
+            int repStep = maxEpochs / 100;
+            double l = alpha / (3.0 * maxEpochs);
+            InitWeights();
+            while ((! cancel) && (error > _epsilon) && ((epoch < maxEpochs)))
+            {
+                double epoch_err = 0.0;
+                for (int i = 0; i < x.Rows / batchSize; i++)
+                {
+                    Matrix xb = MakeBatch(x, i * batchSize, batchSize, idx);
+                    Matrix yb = MakeBatch(y, i * batchSize, batchSize, idx);
+                    FF(xb);
+                    double e = BP(yb, alpha, Nesterov);
+                    epoch_err += e;
+                }
+                error = epoch_err / x.Rows;
+                idx.Shuffle();
+                epoch++;
+                alpha = NextRate(alpha, epoch, l);
+                //PrintModel();
+                if ((epoch < 100) || ((epoch % (repStep)) == 0))
+                {
+                    PlotData p = new PlotData();
+                    //p.DeltaX = epoch;
+                    //p.DeltaY = delta;
+                    p.LossX = epoch;
+                    p.LossY = error;
+                    pFn?.Invoke(0, p);
+                }
+            }
+            TrainResult r = new TrainResult();
+            r.Epochs = epoch;
+            r.Error = error;
+            return r;
+        }
+
+        public void PrintModel()
+        {
+            for (int i = 0; i < _hiddenLayers; i++)
+            {
+                w[i].Print(String.Format("w[{0}]", i));
+            }
+            for (int i = 0; i < _hiddenLayers; i++)
+            {
+                if (a[i] != null)
+                    a[i].Print(String.Format("a[{0}]", i));
             }
         }
 
-        public void TrainMB(Matrix x, Matrix y, ReportProgress pFn = null)
+        public void TrainMB(Matrix x, Matrix y, int maxEpochs, int batchSize, double alpha, ReportProgress pFn = null)
         {
-            const int BatchSize = 5;
-
+            int repStep = maxEpochs / 100;
             Indexer idx = new Indexer(x.Rows);
             int epoch = 0;
             double error = 1.0;
             InitWeights();
-            while ((error > _epsilon) && ((epoch < 100000)))
+            while ((error > _epsilon) && ((epoch < maxEpochs)))
             {
                 double epoch_err = 0.0;
                 int j = 0;
-                for (int i = 0; i < x.Rows/BatchSize; i++)
+                for (int i = 0; i < x.Rows/batchSize; i++)
                 {
                     // make batch
                     Matrix xb = x.Row(idx[j]);
                     Matrix yb = y.Row(idx[j]);
                     j++;
-                    for (int k = 0; k < BatchSize-1; k++)
+                    for (int k = 0; k < batchSize-1; k++)
                     {
                         xb.AppendRows(x, idx[j], 1);
                         yb.AppendRows(y, idx[j], 1);
                         j++;                        
                     }
+                    //
                     FF(xb);
-                    double e = BP(yb);
+                    double e = BP(yb, alpha);
                     epoch_err += e;
                 }
-
-                error = epoch_err / (x.Rows/ BatchSize);
+                error = epoch_err / (x.Rows/ batchSize);
+                //Console.WriteLine("error= {0}", error);
                 idx.Shuffle();
                 epoch++;
-                if ((epoch % 1000) == 0)
+                if ((epoch % (repStep/4)) == 0)
                 {
-                    pFn?.Invoke(100 * epoch / 100000, error);
+                    pFn?.Invoke(epoch , error);
+                    //pFn?.Invoke(100 * epoch / repStep, error);
+                    Console.WriteLine("error= {0}", error);
                 }
             }
         }
 
 
-        public void Verify(Matrix x, Matrix y)
+        public void Verify2(Matrix x, Matrix y, double epsilon = 0.1)
         {
-            double epsilon = 0.1;
-            double matches = 0.0;
+            int matches = 0;
+            for (int i = 0; i < x.Rows; i++)
+            { 
+                FF(x.Row(i));
+                Matrix e = y.Row(i).Transpose() - a[_hiddenLayers];
+                double err = e.SquaredError();
+                if (err <= epsilon)
+                {
+                    matches++;
+                }
+                else
+                {
+                    Console.WriteLine("==== Miss ====");
+                    y.Row(i).Print("Actual");
+                    a[_hiddenLayers].Transpose().Print("target");
+                }
+            }
+            Console.WriteLine("Accuracy= {0:N2}", (1.0* matches) / x.Rows);
+        }
+
+        public VerifyResult Verify(Matrix x, Matrix y, double epsilon = 0.15)
+        {
+            VerifyResult r = new VerifyResult();
+            Logger log= new Logger("./verify.log");
+            log.Log("verifying results");
+            int matches = 0;
+            FF(x);
+            Matrix e = a[_hiddenLayers] - y.Transpose();
+            r.Error = e.SquaredError()/e.Rows;
             for (int i = 0; i < x.Rows; i++)
             {
-                FF(x.Row(i));
-                matches = matches + ((Math.Abs(a[1][0, 0] - y[i, 0]) <= epsilon) ? 1.0 : 0.0);
-                Console.WriteLine("target = {0} | actual = {1}", a[1][0, 0], y[i, 0]);
+                bool match = true;
+                for (int k = 0; (k < e.Rows) && match; k++)
+                {
+                    match = match && (Math.Abs(e[k, i]) <= epsilon);
+                }
+                if (match)
+                {
+                    matches++;
+                }
+                else
+                {
+                    r.Misses.Add(i);
+                    log.Log("Miss");
+                    log.Log(y.Row(i).PrintFn, "actual");
+                    log.Log(a[_hiddenLayers].Column(i).Transpose().PrintFn, "target");
+                }
             }
-            Console.WriteLine("Accuracy= {0:N2}", matches / x.Rows);
+            r.Accuracy = (1.0 * matches) / x.Rows;
+            log.Log("Samples= {0} Errors = {1}", x.Rows, r.Misses.Count);
+            log.Log("Accuracy= {0:N2}", r.Accuracy);
+            log.Flush();
+            return r;
         }
     }
 }

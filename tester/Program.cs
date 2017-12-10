@@ -110,186 +110,34 @@ namespace tester
             {1} };
 
 
-        public static void Shuffle(int[] array)
+        static void MainReal(string[] args)
         {
-            Random gen = new Random(DateTime.Now.Millisecond);
-            for (int i = 0; i < array.Length; i++)
-            {
-                int j = gen.Next(array.Length - i - 1);
-                int temp = array[i];
-                array[i] = array[j];
-                array[j] = temp;
-            }
-        }
-
-        static void Main3(string[] args)
-        {
-            Matrix x = new Matrix(X);
-            Matrix y = new Matrix(Y);
-            //y.Map((v) => (v == 0.0) ? -1.0 : 1.0);
-
-            int Layers = 2;
-            Matrix[] w = new Matrix[Layers];
-            Matrix[] a = new Matrix[Layers];
-            w[0] = new Matrix(2, 2);
-            w[0].FillRandom(-1.0, 1.0);
-            w[1] = new Matrix(2, 1);
-            w[1].FillRandom(-1.0, 1.0);
-            a[0] = null;
-            a[1] = null;
-
-
-            int[] idx = CreateIndex(x.Rows);
-            int epoch = 0;
-            double error = 1.0;
-
-            while ((error > 0.25) && ((epoch < 10000)))
-            {
-                Matrix e = null;
-                for (int i = 0; i < x.Rows; i++)
-                {
-                    // FF
-                    a[0] = x.Row(idx[i]).Dot(w[0]).Map((v) => Math.Tanh(v));
-                    a[1] = a[0].Dot(w[1]).Map((v) => Math.Tanh(v));
-                    //
-                    e = a[1].Transpose() - y.Row(idx[i]);
-                    error = e.SquaredError();
-                    //if ((epoch > 10000) || ((error < 0.1) && (epoch > 5)))
-                    //    break;
-                   
-                    Matrix d2 = e * a[1].MapNew(Prime);
-                    Matrix d1 = d2.Dot(w[1].Transpose()) * a[0].MapNew(Prime);
-                    Matrix d0 = d1.Dot(w[0].Transpose()) * x.Row(idx[i]).MapNew(Prime);
-                    //W[i] += s[i].T.dot(s_delta[i])
-                    w[0] = w[0] + a[0].Transpose().Dot(d1).Multiply(Mu);
-                    w[1].Map((v) => v + a[1][0, 0] * d2[0, 0] * Mu);
-                    //w[1] = w[1] + a[1].Transpose().Dot(d2).Multiply(Mu);
-                }
-                Shuffle(idx);
-                epoch++;
-                if ((epoch % 50) == 0)
-                    Console.WriteLine("=====> Error = {0}", error);
-            }
-            Console.WriteLine("=====> Last Error = {0:N8} epochs = {1}", error, epoch);
-            w[0].Print("w0");
-            w[1].Print("w1");
-            // verify
-            Matrix vx = new Matrix(VX);
-            Matrix vy = new Matrix(VY);
-            //vy.Map((v) => (v == 0.0) ? -1.0 : 1.0);
-            for (int i = 0; i < vx.Rows; i++)
-            {
-                a[0] = x.Row(i).Dot(w[0]).Map((v) => Math.Tanh(v));
-                a[1] = a[0].Dot(w[1]).Map((v) => Math.Tanh(v));
-                Console.WriteLine("target = {0} | actual = {1}", a[1][0, 0], vy[i, 0]);
-            }
-        }
-
-        static int [] CreateIndex(int sz)
-        {
-            int[] idx = new int[sz];
-            for (int i = 0; i < sz; i++)
-                idx[i] = i;
-            return idx;
-        }
-
-        static void Main2(string[] args)
-        {
-            Matrix x = new Matrix(X);
-            Matrix y = new Matrix(Y);
-
-            Matrix w0 = new Matrix(2, 2);
-            w0.FillRandom(-0.5, 0.5);
-            Matrix w1 = new Matrix(2, 1);
-            w1.FillRandom(-0.5, 0.5);
-            //
-            int[] idx = new int[x.Rows];
-            for (int i = 0; i < x.Rows; i++)
-                idx[i] = i;
-            Matrix a1 = null;
-            double error = 1.0;
-            int iter = 0;
-            while ((iter < 10000) && (error > 0.00001))
-            {
-                for (int i = 0; i < x.Rows; i++)
-                {
-                    Matrix a0 = w0.Dot(x.Row(idx[i]).Transpose());
-                    a0.Map((v) => Math.Tanh(v));
-                    a1 = w1.Dot(a0.Transpose());
-                    a1.Map((v) => Math.Tanh(v));
-                    Matrix e = y.Row(idx[i]) - a1.Transpose();
-                    error = e.SquaredError();
-                    // BP
-                    Matrix d2 = e * a1.MapNew(Prime);
-                    Matrix d1 = d2.Transpose().Dot(w1) * a0.MapNew(Prime);
-                    w0 = w0 + d1.Transpose().Dot(a0).Map((v) => v * Mu);
-                    w1 = w1 + d2.Transpose().Dot(a1).Map((v) => v * Mu);
-                    Console.WriteLine("=====> Error = {0}", error);
-                    /*
-
-
-                    //w0.Print("w0=");
-                    Matrix a0 = x.Row(idx[i]).Dot(w0);
-                    a0.Map((v) => Math.Tanh(v));
-                    //a0.Print("a0=");
-                    //w1.Print("w1=");
-                    a1 = a0.Dot(w1);
-                    a1.Map((v) => Math.Tanh(v));
-                    //a1.Print("a1=");
-                    Matrix e = y.Row(idx[i]) - a1;
-                    //Console.WriteLine();
-                    error = e.SquaredError();
-                    Console.WriteLine("=====> Error = {0}", error);
-                    //
-                    // BP
-                    Matrix d2 = e * a1.MapNew(Prime);
-                    //d2.Print("d2=");
-                    Matrix d1 = d2.Dot(w1.Transpose()) * a0.MapNew(Prime);
-                    //d1.Print("d1=");
-                    Matrix d0 = d1.Dot(w0.Transpose()) * x.Row(idx[i]).MapNew(Prime);
-                    //d0.Print("d0=");
-                    // update weights
-                    w0 = w0 + d0.Transpose().Dot(a0).Map((v) => v * Mu);
-                    //w0.Print("w0=");
-                    w1 = w1 + d1.Transpose().Dot(a1);
-                    //w1.Print("w1=");
-                    */
-                }
-                Shuffle(idx);
-            }
-        }
-
-        public static double Prime(double x)
-        {
-            return (1.0 - Math.Pow(Math.Tanh(x), 2.0));
-        }
-
-        static void Main7(string[] args)
-        {
-            mlp net = new mlp(2, 3, 2, 1);
+            mlp net = new mlp(2, 3, 3, 1);
             Matrix x = new Matrix(DataSets.circ_X);
             Matrix y = new Matrix(DataSets.circ_Y);
             //y.Map((v) => (v == 0.0) ? -1.0 : 1.0);
-
-            net.TrainMB(x, y);
+            bool cancel = false;
+            net.Train(x, y, 100000, 0.001, ref cancel);
             Matrix vx = new Matrix(DataSets.circ_VX);
             Matrix vy = new Matrix(DataSets.circ_VY);
             //vy.Map((v) => (v == 0.0) ? -1.0 : 1.0);
 
-            net.Verify(x, y);
+            //net.Verify(x, y);
             net.Verify(vx, vy);
         }
 
-        static void Main(string[] args)
+        static void Main7(string[] args)
         {
-            mlp net = new mlp(3, 3, 2, 3);
+            mlp net = new mlp(3, 2, 2, 3, 0.001);
             Matrix x = new Matrix(DataSets.class_X);
             Matrix y = new Matrix(DataSets.class_Y);
             y.Map((v) => (v == 0.0) ? -1.0 : 1.0);
 
-            net.Train(x, y, 100000);
-            y.Print("Y");
-            net.Predict(x);
+            //net.Train(x, y, 150000, 0.05);
+            //net.TrainMB(x, y, 100000, 3);
+            net.Verify(x, y);
+            //y.Print("Y");
+            //net.Predict(x);
             /*
             Matrix vx = new Matrix(DataSets.circ_VX);
             Matrix vy = new Matrix(DataSets.circ_VY);
@@ -303,33 +151,199 @@ namespace tester
         {
             DataGen.Go2D("c:\\src\\circ.txt", "circ", (x) => Math.Sqrt(20 - Math.Pow(x, 2.0) / 8.0), 50, 0.5, 0.15);
         }
-        static void Main03(string[] args)
+        public static Matrix StdDevColumn(Matrix x)
         {
-            Matrix x = new Matrix(new double[,]  {
-            {1.0, 2.0, 3.0},
-            {4.0, 5.0, 6.0},
-            {7.0, 8.0, 9.0}
-            });
-            x.Print("x");
+            Matrix meanCol = x.ColumnSum().Map((u) => { return u / x.Rows; });
+            //meanCol.Print("mean");
+            Matrix diff = x.Clone().RowOp(meanCol, (u, v) => { return ((u - v) * (u - v)); });
+            //diff.Print("sqr diff");
+            return diff.ColumnSum().Map((u) => { return Math.Sqrt(u / diff.Rows); });
+        }
+
+        static void Main99(string[] args)
+        {
             /*
-            x.RowSlice(0, 2).Print("slice - first 2");
-            x.RowSlice(1, 2).Print("slice - last 2");
-            x.RowSlice(1, 1).Print("slice - middle");
-            x.RowSlice(2, 1).Print("slice - last");
+            Matrix x = new Matrix(new double[,]  {
+                {1.0, 2.0, 3.0},
+                {4.0, 5.0, 6.0},
+                {7.0, 8.0, 9.0}
+            });
+            */
+            Matrix x = new Matrix(DataSets.circ_X);
+            //x.FillRandom(-2, 2);
+            //x.Print("x");
+            Matrix stdvCol = StdDevColumn(x);
+            stdvCol.Print("stdv");
+            x.RowOp(stdvCol, (u, v) => { return u - v; }).Print("norm");
+            /*
+            Matrix m = new Matrix(new double[,]  {
+            {2.0, 1.5, 1.0} });
+            m.Print("m");
+
+            x.RowOp(m, (u, v) => { return u * v; }).Print("row op *");
             */
             Matrix y = new Matrix(new double[,]  {
             {9.0, 8.0, 7.0},
             {6.0, 5.0, 4.0},
             {3.0, 2.0, 1.0}
             });
-
             y.Print("y");
-            x.AppendRows(y, 2, 1);
-            x.Print("x + y(2,1)");
-            x.AppendRows(y, 0, 2);
-            x.Print("x + y(0,2)");
+            Matrix z = new Matrix(new double[,]  {
+            {3 }, { 4 }, { 5} });
+            z.Print("z");
+            y.ColumnOp(z, (u, v) => { return u / v; }).Print("col op /");
 
         }
+
+        static void Main_(string[] args)
+        {
+            Matrix x = new Matrix(new double[,]  {
+            {9.0, 8.0, 7.0},
+            {6.0, 5.0, 4.0},
+            {3.0, 2.0, 1.0}
+            });
+
+            Matrix y = new Matrix(new double[,]  {
+            {1.5, 0.5, 2.0} });
+            Matrix d = new Matrix(new double[,]  {
+            {0.3 }, { 0.24 }, { 1.2} });
+
+            y.Dot(x).Print("dot");
+            x.Dot(y.Transpose()).Print("T.dot");
+            d.Print("d");
+            Matrix u = x.Dot(y.Transpose());
+            Matrix z = (u * d);
+            z.Print("prod");
+            z.MapNew((v) => v * 1.2).Print("map");
+            z.Print("prod");
+            x.Row(0).Print("x");
+            y.Print("y");
+            Matrix del = x.Row(0) - y;
+            del.Print("del");
+
+        }
+
+        static Matrix MakeBatch(Matrix x, int start, int batchSize, Indexer idx)
+        {
+            // make batch
+            Matrix xb = x.Row(idx[start]);
+            for (int k = start+1; k < (start+batchSize); k++)
+                xb.AppendRows(x, idx[k], 1);
+            return xb;
+        }
+        static bool Compare(Matrix a, Matrix b)
+        {
+            bool result = true;
+            for (int i = 0; i < a.Rows; i++)
+            {
+                for (int j = 0; j < a.Columns; j++)
+                {
+                    double aa = a[i, j];
+                    double bb = b[i, j];
+                    result = result && (a[i,j] == b[i,j]);
+                    if (!result)
+                        return false;
+                }
+            }
+            return result;
+        }
+
+        static void Main77(string[] args)
+        {
+            List<Matrix> batches = new List<Matrix>();
+            Matrix x = new Matrix(DataSets.circ_X);
+            x.Print("X");
+            x.ColumnSum().Print("X-sum");
+
+            Indexer idx = new Indexer(x.Rows);
+            idx.Shuffle();
+            int batchSize = 4;
+            for (int i = 0; i < x.Rows/batchSize; i++)
+            {
+                Matrix xb = MakeBatch(x, i * batchSize, batchSize, idx);
+                batches.Add(xb);
+            }
+            int leftover =  x.Rows % batchSize;
+            Matrix lb = MakeBatch(x, x.Rows - leftover, leftover, idx);
+            batches.Add(lb);
+            Matrix n = new Matrix(batches[0]);
+            for (int i = 1; i < batches.Count; i++)
+            {
+                n.AppendRows(batches[i], 0, batches[i].Rows);
+            }
+            n.Print("n");
+            n.ColumnSum().Print("n-sum");
+            //xb.Print(String.Format("b[{0}]", i));
+            //bool r = Compare(x, n);
+            //
+        }
+
+        static public void loadMNIST(string fn, string labelsFn, string paramsFn)
+        {
+            using (var fs = File.OpenRead(fn))
+            using (var reader = new StreamReader(fs))
+            {
+                List<byte> targetLst = new List<byte>();
+                List<List<byte>> dataList = new List<List<byte>>();
+                // ignore column name line
+                reader.ReadLine();
+                while (!reader.EndOfStream)
+                {
+                    List<byte> dataRow = new List<byte>();
+                    var line = reader.ReadLine();
+                    var values = line.Split(',');
+                    targetLst.Add(Byte.Parse(values[0]));
+                    for (int i = 1; i < values.Length; i++)
+                    {
+                        dataRow.Add(Byte.Parse(values[i]));
+                    }
+                    dataList.Add(dataRow);
+                }
+                // make matrices
+                Matrix labels = new Matrix(targetLst.Count, 10);
+                labels.FillZero();
+                int k = 0;
+                foreach(byte item in targetLst)
+                {
+                    labels[k++, item] = 1.0;
+                }
+                //serialize labels
+                using (Stream stream = File.Open(labelsFn, FileMode.Create))
+                {
+                    var bformatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+                    bformatter.Serialize(stream, labels);
+                }
+                /*
+                //
+                Matrix varMat = new Matrix(dataList.Count, dataList[0].Count);
+                k = 0;
+                int j = 0;
+                foreach(List<byte> row in dataList)
+                {
+                    foreach (byte item in row)
+                    {
+                        varMat[k, j++] = item;
+                    }
+                    k++;
+                    j = 0;
+                }
+
+                //serialize data
+                using (Stream stream = File.Open(paramsFn, FileMode.Create))
+                {
+                    var bformatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+                    bformatter.Serialize(stream, varMat);
+                }
+                */
+            }
+        }
+
+        static void Main(string[] args)
+        {
+            //loadMNIST(@"C:\Users\Donato\Downloads\digits-train.csv", @"c:\data\labels2.mat", "./params.mat");
+            Matrix y = Matrix.Load(@"c:\data\labels2.mat");
+        }
+
 
     }
 }

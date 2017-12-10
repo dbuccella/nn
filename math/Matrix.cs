@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace math
 {
+    [Serializable]
     public class Matrix
     {
         int _rows;
@@ -18,8 +20,29 @@ namespace math
                 throw new Exception("Not the same dimension");
         }
 
-        public Matrix()
+        public static Matrix Load(string filename)
         {
+            Matrix r = null;
+            using (Stream stream = File.Open(filename, FileMode.Open))
+            {
+                var bformatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+                r = (Matrix) bformatter.Deserialize(stream);
+            }
+            return r;
+        }
+
+        public static void Save(Matrix r, string filename)
+        {
+            using (Stream stream = File.Open(filename, FileMode.Create))
+            {
+                var bformatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+                bformatter.Serialize(stream, r);
+            }
+        }
+
+        private Matrix()
+        {
+            
             _rows = 0;
             _columns = 0;
             _data = null;
@@ -71,6 +94,13 @@ namespace math
                 _data[i * _columns + j] = value;
             }
         }
+
+        public Matrix Clone()
+        {
+            Matrix r = new Matrix(this);
+            return r;
+        }
+
         public int Rows { get { return _rows; } }
         public int Columns { get { return _columns; } }
         public Matrix Row(int i)
@@ -79,6 +109,7 @@ namespace math
             Array.Copy(_data, i * _columns, r._data, 0, _columns);
             return r;
         }
+
         public Matrix Column(int i)
         {
             Matrix r = new Matrix(_rows, 1);
@@ -110,6 +141,21 @@ namespace math
                 throw new Exception("Not the same column size");
             Array.Resize<double>(ref _data, (_rows + rowCount) * _columns);
             Array.Copy(src._data, rowStart * _columns, _data, _rows*_columns, rowCount * _columns);
+            _rows += rowCount;
+        }
+
+        public void CopyRows(Matrix src, int srcRowStart, int rowCount, int destRowStart)
+        {
+            if ((srcRowStart + rowCount) > src._rows)
+                throw new Exception("Slice too large");
+            if (srcRowStart >= src._rows)
+                throw new Exception("Invalid slice specification");
+            if (_columns != src._columns)
+                throw new Exception("Not the same column size");
+
+
+            Array.Resize<double>(ref _data, (_rows + rowCount) * _columns);
+            Array.Copy(src._data, rowStart * _columns, _data, _rows * _columns, rowCount * _columns);
             _rows += rowCount;
         }
 
@@ -168,7 +214,7 @@ namespace math
             EnsureSameDim(this, a);
             for (int i = 0; i < _data.Length; i++)
             {
-                _data[i] += a._data[i];
+                _data[i] *= a._data[i];
             }
             return this;
         }
@@ -201,7 +247,7 @@ namespace math
         {
             for (int i = 0; i < _data.Length; i++)
             {
-                _data[i] += a;
+                _data[i] *= a;
             }
             return this;
         }
@@ -236,7 +282,7 @@ namespace math
         {
             EnsureSameDim(a, b);
             Matrix r = new Matrix(a);
-            return r.Multiply(b);
+            return r.Divide(b);
         }
 
         public Matrix Dot(Matrix a)
@@ -321,20 +367,27 @@ namespace math
             }
             return this;
         }
-        public void Print(string label="")
+
+        public void Print(string label="", TextWriter stream = null)
         {
+            TextWriter s = stream ?? Console.Out;
             if (label != "")
-                Console.WriteLine(label);
-            Console.WriteLine("[{0},{1}]", _rows, _columns);
+                s.WriteLine(label);
+            s.WriteLine("[{0},{1}]", _rows, _columns);
             for (int i = 0; i < _rows; i++)
             {
                 for (int j = 0; j < _columns; j++)
                 {
-                    Console.Write("{0:N6}   ", this[i, j]);
+                    s.Write("{0:N6}   ", this[i, j]);
                 }
-                Console.WriteLine();
+                s.WriteLine();
             }
-            Console.WriteLine();
+            s.WriteLine();
+        }
+
+        public void PrintFn(TextWriter f, string msg)
+        {
+            Print(msg, f);
         }
 
         public double SquaredError()
@@ -346,5 +399,111 @@ namespace math
             }
             return error;
         }
+
+        public double Error()
+        {
+            return Math.Sqrt(SquaredError());
+        }
+        public double Mean()
+        {
+            return _data.Average();
+        }
+
+        public double Stdv()
+        {
+            double mean = _data.Average();
+            double sum = 0.0;
+            for (int i = 0; i < _data.Length; i++)
+                sum += Math.Pow(_data[i] - mean, 2.0);
+            return Math.Sqrt(sum / _data.Length);
+        }
+
+        public Matrix ColumnSum()
+        {
+            Matrix r = new Matrix(_columns);
+            r.FillZero();
+            for (int i = 0; i < _rows; i++)
+            {
+                for (int j = 0; j < _columns; j++)
+                {
+                    r[0, j] += this[i, j];
+                }
+            }
+            return r;
+        }
+
+        public Matrix ColumnAvg()
+        {
+            Matrix r = ColumnSum();
+            return r.Map((x) => { return x / _rows; });
+        }
+
+        public Matrix ColumnStdv()
+        {
+            Matrix r = ColumnAvg();
+            Matrix diff = Clone().RowOp(r, (u, v) => { return ((u - v) * (u - v)); });
+            return diff.ColumnSum().Map((u) => { return Math.Sqrt(u / diff.Rows); });
+        }
+
+        public Matrix ColumnStdv(Matrix meanRow)
+        {
+            Matrix diff = Clone().RowOp(meanRow, (u, v) => { return ((u - v) * (u - v)); });
+            return diff.ColumnSum().Map((u) => { return Math.Sqrt(u / diff.Rows); });
+        }
+
+        public Matrix ColumnNormalize(Matrix meanRow, Matrix stdvCol)
+        {
+            RowOp(meanRow, (x, mean) => { return x - mean; });
+            RowOp(stdvCol, (x, stdv) => { return x/stdv; });
+            return this;
+        }
+
+        public Matrix RowSum()
+        {
+            Matrix r = new Matrix(_rows, 1);
+            r.FillZero();
+            for (int i = 0; i < _rows; i++)
+            {
+                for (int j = 0; j < _columns; j++)
+                {
+                    r[i, 0] += this[i, j];
+                }
+            }
+            return r;
+        }
+
+        public delegate double MapFn2(double x, double y);
+
+        public Matrix RowOp(Matrix r, MapFn2 fn)
+        {
+            if (this._columns != r._columns)
+                throw new Exception(String.Format("Incompatible dimensions left({0},{1}) , right({2},{3})", 
+                    this._rows, this._columns, r._rows, r._columns));
+            for (int i = 0; i < _rows; i++)
+            {
+                int k = i * _columns;
+                for (int j = 0; j < _columns; j++)
+                {
+                    _data[k + j] = fn(_data[k + j], r._data[j]);
+                }
+            }
+            return this;
+        }
+
+        public Matrix ColumnOp(Matrix c, MapFn2 fn)
+        {
+            if (this._rows != c._rows)
+                throw new Exception(String.Format("Incompatible dimensions left({0},{1}) , right({2},{3})",
+                    this._rows, this._columns, c._rows, c._columns));
+            for (int j = 0; j < _columns; j++)
+            {
+                for (int i = 0; i < _rows; i++)
+                {
+                    this[i, j] = fn(this[i, j], c[i, 0]);
+                }
+            } 
+            return this;
+        }
+
     }
 }

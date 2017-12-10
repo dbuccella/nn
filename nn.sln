@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tester", "tester\tester.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "nnViewer", "nnViewer\nnViewer.csproj", "{2EA58C94-B9C3-4EE6-A876-221B16FD6684}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utilities", "Utilities\Utilities.csproj", "{1629F03B-CA4D-469B-A6B4-CE564B57C193}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{2EA58C94-B9C3-4EE6-A876-221B16FD6684}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2EA58C94-B9C3-4EE6-A876-221B16FD6684}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2EA58C94-B9C3-4EE6-A876-221B16FD6684}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1629F03B-CA4D-469B-A6B4-CE564B57C193}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1629F03B-CA4D-469B-A6B4-CE564B57C193}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1629F03B-CA4D-469B-A6B4-CE564B57C193}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1629F03B-CA4D-469B-A6B4-CE564B57C193}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

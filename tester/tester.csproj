@@ -55,6 +55,10 @@
       <Project>{208bcdb9-b837-4e9d-ad6f-3c9af7721911}</Project>
       <Name>math</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Utilities\Utilities.csproj">
+      <Project>{1629f03b-ca4d-469b-a6b4-ce564b57c193}</Project>
+      <Name>Utilities</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
